@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Copy, Check, Menu, X, Wand2, Download, Loader2, Sparkles, Wallet, Coins, Search, ShoppingCart, ChevronDown, Pencil, Eraser, Trash2, Zap, Rocket, Type, AlertCircle, Dice6, Mail, ArrowRight } from 'lucide-react';
+import { Copy, Check, Menu, X, Wand2, Download, Loader2, Sparkles, Wallet, Coins, Search, ShoppingCart, ChevronDown, Pencil, Eraser, Trash2, Zap, Rocket, Type, AlertCircle, Dice6, Mail, ArrowRight, Palette } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { GoogleGenAI } from "@google/genai";
 
@@ -128,13 +128,27 @@ const SpermSwarm: React.FC = () => {
 
 const MarqueeBar: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`bg-pink-400 text-black overflow-hidden font-black uppercase border-y-4 border-black ${className} relative z-20`}>
-    <div className="flex animate-marquee gap-12 md:gap-20 whitespace-nowrap items-center">
-      {[...Array(10)].map((_, i) => (
-        <div key={i} className="flex items-center gap-4">
-          <span className="text-xl">●</span>
-          <span>THE EGG IS RARE</span>
-          <span className="text-xl">●</span>
-          <span>$EGG</span>
+    <style>{`
+      @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      .animate-marquee {
+        animation: marquee 20s linear infinite;
+        width: max-content;
+      }
+    `}</style>
+    <div className="flex animate-marquee">
+      {[...Array(2)].map((_, setIndex) => (
+        <div key={setIndex} className="flex gap-12 md:gap-20 whitespace-nowrap items-center px-6 md:px-10">
+          {[...Array(10)].map((_, i) => (
+            <div key={`${setIndex}-${i}`} className="flex items-center gap-4">
+              <span className="text-xl">●</span>
+              <span>THE EGG IS RARE</span>
+              <span className="text-xl">●</span>
+              <span>$EGG</span>
+            </div>
+          ))}
         </div>
       ))}
     </div>
@@ -278,6 +292,7 @@ const DrawingBoard: React.FC = () => {
 const MemeGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState("");
   const [memeText, setMemeText] = useState("");
+  const [style, setStyle] = useState<'original' | 'cartoon' | 'realistic'>('original');
   const [generating, setGenerating] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -324,6 +339,7 @@ const MemeGenerator: React.FC = () => {
       
       const contents: any[] = [];
       
+      // We send the logo as reference. 
       if (logoData) {
         contents.push({
           inlineData: {
@@ -333,14 +349,41 @@ const MemeGenerator: React.FC = () => {
         });
       }
 
+      let stylePrompt = "";
+      switch (style) {
+        case 'cartoon':
+            stylePrompt = `
+                STYLE: Vibrant 2D vector cartoon art. 
+                COLORS: Predominantly Bright Pink (#f472b6) and Black.
+                CHARACTER: An expressive, funny EGG character. Bold outlines, cel-shaded.
+                ATMOSPHERE: Fun, energetic.
+            `;
+            break;
+        case 'realistic':
+            stylePrompt = `
+                STYLE: Hyper-realistic 3D render, cinematic lighting, 8k resolution, Unreal Engine 5 style.
+                COLORS: Pink (#f472b6) and Black aesthetic.
+                CHARACTER: A realistic textured EGG, perhaps glossy, metallic, or organic.
+                ATMOSPHERE: Dramatic, high contrast, depth of field.
+            `;
+            break;
+        case 'original':
+        default:
+            stylePrompt = `
+                STYLE: Crude primitive marker doodle, simple 2D sketch.
+                COLORS: Strictly Pure Black and Pink (#f472b6) ONLY.
+                MANDATORY CHARACTER DESIGN: An EGG. A simple, perfect, oval-shaped EGG. Minimalist style.
+                NO GRADIENTS. NO SHADING. ONLY FLAT PINK AND BLACK.
+            `;
+            break;
+      }
+
       const instruction = `
-        STYLE: Crude primitive marker doodle, simple 2D sketch.
-        COLORS: Strictly Pure Black and Pink (#f472b6) ONLY.
-        MANDATORY CHARACTER DESIGN: An EGG. A simple, perfect, oval-shaped EGG. Minimalist style.
-        BACKGROUND: Absolute solid black.
+        Create an image based on the following specifications:
+        ${stylePrompt}
+        BACKGROUND: Absolute solid black (or dark ambient for realistic).
         SCENE: ${activePrompt}.
-        ${memeText ? `Include text "${memeText.toUpperCase()}" in hand-drawn messy pink marker letters.` : ""}
-        NO GRADIENTS. NO SHADING. ONLY FLAT PINK AND BLACK.
+        ${memeText ? `Include text "${memeText.toUpperCase()}" integrated into the image.` : ""}
       `;
 
       contents.push({ text: instruction });
@@ -405,6 +448,25 @@ const MemeGenerator: React.FC = () => {
             {/* Controls Area - Below */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-pink-900/5 border border-pink-400/20 p-6 rounded-2xl">
               <div className="space-y-4">
+                 <div className="space-y-2">
+                  <label className="text-pink-400 font-bold tracking-widest text-xs flex items-center gap-2"><Palette size={14} /> STYLE MUTATION</label>
+                  <div className="flex gap-2">
+                    {['original', 'cartoon', 'realistic'].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setStyle(s as any)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-all ${
+                          style === s 
+                            ? 'bg-pink-400 text-black border-pink-400' 
+                            : 'bg-transparent text-pink-400 border-pink-400/30 hover:border-pink-400'
+                        }`}
+                      >
+                        {s.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-pink-400 font-bold tracking-widest text-xs">DNA SEQUENCE (PROMPT)</label>
                   <input
