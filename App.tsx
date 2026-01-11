@@ -35,18 +35,38 @@ const SectionReveal: React.FC<{ children: React.ReactNode; className?: string; i
   </motion.section>
 );
 
-// New SpermSwarm Component
+// New SpermSwarm Component - Approaches from all sides (360 degrees)
 const SpermSwarm: React.FC = () => {
   const swimmers = useMemo(() => {
-    return Array.from({ length: 15 }).map((_, i) => ({
-      id: i,
-      // Start mostly from bottom and sides
-      initialX: Math.random() * 100, 
-      initialY: 90 + Math.random() * 20, 
-      duration: 15 + Math.random() * 20,
-      delay: Math.random() * 5,
-      scale: 0.5 + Math.random() * 0.5,
-    }));
+    return Array.from({ length: 30 }).map((_, i) => {
+      const angle = Math.random() * 2 * Math.PI;
+      // Start far away from center (120% radius to be offscreen or edges)
+      const radius = 100 + Math.random() * 50; 
+      
+      // Target is the Logo Position (Approx 50% Left, 20% Top)
+      const targetX = 50;
+      const targetY = 20; 
+
+      // Calculate start position based on angle and radius from the target center
+      // NOTE: We adjust aspect ratio slightly for Y to cover wider screens better
+      const startX = targetX + Math.cos(angle) * radius;
+      const startY = targetY + Math.sin(angle) * radius;
+
+      // Calculate rotation to face the target
+      const dx = targetX - startX;
+      const dy = targetY - startY;
+      const rotation = Math.atan2(dy, dx) * (180 / Math.PI) + 90; // +90 because the shape points UP by default
+
+      return {
+        id: i,
+        startX,
+        startY,
+        rotation,
+        duration: 20 + Math.random() * 15, // Slow movement (20-35s)
+        delay: Math.random() * 20,
+        scale: 0.3 + Math.random() * 0.4,
+      };
+    });
   }, []);
 
   return (
@@ -55,31 +75,36 @@ const SpermSwarm: React.FC = () => {
         <motion.div
           key={s.id}
           className="absolute"
-          initial={{ left: `${s.initialX}%`, top: `${s.initialY}%`, opacity: 0 }}
+          initial={{ 
+            left: `${s.startX}%`, 
+            top: `${s.startY}%`, 
+            opacity: 0,
+            rotate: s.rotation,
+            scale: s.scale
+          }}
           animate={{ 
-            left: "50%", // Target center (logo x)
-            top: "15%",  // Target top (logo y)
-            opacity: [0, 1, 1, 0] 
+            left: "50%", 
+            top: "20%", // Move to Logo Center
+            opacity: [0, 1, 1, 0] // Fade in then out
           }}
           transition={{ 
             duration: s.duration, 
             delay: s.delay, 
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "linear"
           }}
-          style={{ transform: `scale(${s.scale})` }}
         >
           {/* Sperm SVG shape */}
-          <div className="relative w-8 h-20 origin-center rotate-45">
+          <div className="relative w-6 h-16 origin-center">
              {/* Head */}
-             <div className="w-3 h-4 bg-pink-400 rounded-full absolute top-0 left-1/2 -translate-x-1/2 blur-[1px]"></div>
+             <div className="w-2.5 h-3.5 bg-pink-400 rounded-full absolute top-0 left-1/2 -translate-x-1/2 blur-[0.5px]"></div>
              {/* Tail (Wiggling SVG) */}
-             <svg className="absolute top-3 left-1/2 -translate-x-1/2 w-4 h-16 overflow-visible" viewBox="0 0 10 40">
+             <svg className="absolute top-2.5 left-1/2 -translate-x-1/2 w-4 h-12 overflow-visible" viewBox="0 0 10 40">
                 <path 
                   d="M5 0 Q 10 10 5 20 T 5 40" 
                   fill="none" 
                   stroke="#f472b6" 
-                  strokeWidth="2"
+                  strokeWidth="1.5"
                   className="animate-wiggle"
                   style={{ opacity: 0.6 }}
                 />
@@ -94,7 +119,7 @@ const SpermSwarm: React.FC = () => {
           100% { d: path("M5 0 Q 0 10 5 20 T 5 40"); }
         }
         .animate-wiggle {
-          animation: wiggle 0.5s linear infinite;
+          animation: wiggle 0.3s linear infinite;
         }
       `}</style>
     </div>
